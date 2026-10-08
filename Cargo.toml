@@ -23,6 +23,8 @@ byteorder = { version = "1.5.0", default-features = false }
 zeroize = { version = "1", default-features = false, features = ["zeroize_derive"] }
 rand_core = { version = "0.10.1", default-features = false }
 hex = {version = "0.4", default-features = false, optional = true}
+bytemuck = {version = "1.25.2", features = ["align_offset", "derive"]}
+rand = "0.10.3"
 
 [dev-dependencies]
 strobe-rs = "0.7"

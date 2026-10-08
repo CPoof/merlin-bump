@@ -215,7 +215,7 @@ impl Transcript {
 /// [`Transcript`] to an owned [`TranscriptRng`] as follows:
 /// ```
 /// # extern crate merlin;
-/// # extern crate rand_core;
+/// # use rand::rng;
 /// # use merlin::Transcript;
 /// # fn main() {
 /// # let mut transcript = Transcript::new(b"TranscriptRng doctest");
@@ -228,7 +228,7 @@ impl Transcript {
 ///     .build_rng()
 ///     .rekey_with_witness_bytes(b"witness1", witness_data)
 ///     .rekey_with_witness_bytes(b"witness2", more_witness_data)
-///     .finalize(&mut rand_core::OsRng);
+///     .finalize(&mut rng());
 /// # }
 /// ```
 /// In this example, the final `rng` is a PRF of `public_data`
