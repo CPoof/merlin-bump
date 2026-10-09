@@ -30,28 +30,28 @@ fn encode_usize_as_u32(x: usize) -> [u8; 4] {
 /// challenges can be computed using
 /// [`challenge_bytes`](Transcript::challenge_bytes).
 ///
-/// # Creating and using a Merlin transcript
+/// # Creating and using a merlin_bump transcript
 ///
-/// To create a Merlin transcript, use [`Transcript::new()`].  This
+/// To create a merlin_bump transcript, use [`Transcript::new()`].  This
 /// function takes a domain separation label which should be unique to
 /// the application.
 ///
-/// To use the transcript with a Merlin-based proof implementation,
-/// the prover's side creates a Merlin transcript with an
+/// To use the transcript with a merlin_bump-based proof implementation,
+/// the prover's side creates a merlin_bump transcript with an
 /// application-specific domain separation label, and passes a `&mut`
 /// reference to the transcript to the proving function(s).
 ///
 /// To verify the resulting proof, the verifier creates their own
-/// Merlin transcript using the same domain separation label, then
+/// merlin_bump transcript using the same domain separation label, then
 /// passes a `&mut` reference to the verifier's transcript to the
 /// verification function.
 ///
-/// # Implementing proofs using Merlin
+/// # Implementing proofs using merlin_bump
 ///
-/// For information on the design of Merlin and how to use it to
+/// For information on the design of merlin_bump and how to use it to
 /// implement a proof system, see the documentation at
-/// [merlin.cool](https://merlin.cool), particularly the [Using
-/// Merlin](https://merlin.cool/use/index.html) section.
+/// [merlin_bump.cool](https://merlin_bump.cool), particularly the [Using
+/// merlin_bump](https://merlin_bump.cool/use/index.html) section.
 #[derive(Clone, Zeroize)]
 pub struct Transcript {
     strobe: Strobe128,
@@ -66,23 +66,23 @@ impl Transcript {
     /// This function should be called by a proof library's API
     /// consumer (i.e., the application using the proof library), and
     /// **not by the proof implementation**.  See the [Passing
-    /// Transcripts](https://merlin.cool/use/passing.html) section of
-    /// the Merlin website for more details on why.
+    /// Transcripts](https://merlin_bump.cool/use/passing.html) section of
+    /// the merlin_bump website for more details on why.
     pub fn new(label: &'static [u8]) -> Transcript {
-        use crate::constants::MERLIN_PROTOCOL_LABEL;
+        use crate::constants::MERLIN_BUMP_PROTOCOL_LABEL;
 
         #[cfg(feature = "debug-transcript")]
         {
             use std::str::from_utf8;
             println!(
                 "Initialize STROBE-128({})\t# b\"{}\"",
-                hex::encode(MERLIN_PROTOCOL_LABEL),
-                from_utf8(MERLIN_PROTOCOL_LABEL).unwrap(),
+                hex::encode(MERLIN_BUMP_PROTOCOL_LABEL),
+                from_utf8(MERLIN_BUMP_PROTOCOL_LABEL).unwrap(),
             );
         }
 
         let mut transcript = Transcript {
-            strobe: Strobe128::new(MERLIN_PROTOCOL_LABEL),
+            strobe: Strobe128::new(MERLIN_BUMP_PROTOCOL_LABEL),
         };
         transcript.append_message(b"dom-sep", label);
 
@@ -93,8 +93,8 @@ impl Transcript {
     ///
     /// The `label` parameter is metadata about the message, and is
     /// also appended to the transcript.  See the [Transcript
-    /// Protocols](https://merlin.cool/use/protocol.html) section of
-    /// the Merlin website for details on labels.
+    /// Protocols](https://merlin_bump.cool/use/protocol.html) section of
+    /// the merlin_bump website for details on labels.
     pub fn append_message(&mut self, label: &'static [u8], message: &[u8]) {
         let data_len = encode_usize_as_u32(message.len());
         self.strobe.meta_ad(label, false);
@@ -137,8 +137,8 @@ impl Transcript {
     ///
     /// The `label` parameter is metadata about the message, and is
     /// also appended to the transcript.  See the [Transcript
-    /// Protocols](https://merlin.cool/use/protocol.html) section of
-    /// the Merlin website for details on labels.
+    /// Protocols](https://merlin_bump.cool/use/protocol.html) section of
+    /// the merlin_bump website for details on labels.
     ///
     /// # Implementation
     ///
@@ -152,8 +152,8 @@ impl Transcript {
     ///
     /// The `label` parameter is metadata about the challenge, and is
     /// also appended to the transcript.  See the [Transcript
-    /// Protocols](https://merlin.cool/use/protocol.html) section of
-    /// the Merlin website for details on labels.
+    /// Protocols](https://merlin_bump.cool/use/protocol.html) section of
+    /// the merlin_bump website for details on labels.
     pub fn challenge_bytes(&mut self, label: &'static [u8], dest: &mut [u8]) {
         let data_len = encode_usize_as_u32(dest.len());
         self.strobe.meta_ad(label, false);
@@ -214,9 +214,9 @@ impl Transcript {
 /// These methods are intended to be chained, passing from a borrowed
 /// [`Transcript`] to an owned [`TranscriptRng`] as follows:
 /// ```
-/// # extern crate merlin;
+/// # extern crate merlin_bump;
 /// # use rand::rng;
-/// # use merlin::Transcript;
+/// # use merlin_bump::Transcript;
 /// # fn main() {
 /// # let mut transcript = Transcript::new(b"TranscriptRng doctest");
 /// # let public_data = b"public data";
@@ -255,8 +255,8 @@ impl Transcript {
 /// minimal, byte-oriented API, and like the [`Transcript`], this API
 /// can be extended to allow rekeying with protocol-specific types
 /// using an extension trait.  See the [Transcript
-/// Protocols](https://merlin.cool/use/protocol.html) section of the
-/// Merlin website for more details.
+/// Protocols](https://merlin_bump.cool/use/protocol.html) section of the
+/// merlin_bump website for more details.
 ///
 /// [rekey_with_witness_bytes]: TranscriptRngBuilder::rekey_with_witness_bytes
 /// [finalize]: TranscriptRngBuilder::finalize
@@ -311,8 +311,8 @@ impl TranscriptRngBuilder {
 /// how to construct one.
 ///
 /// The transcript RNG construction is described in the [Generating
-/// Randomness](https://merlin.cool/transcript/rng.html) section of
-/// the Merlin website.
+/// Randomness](https://merlin_bump.cool/transcript/rng.html) section of
+/// the merlin_bump website.
 pub struct TranscriptRng {
     strobe: Strobe128,
 }
@@ -354,10 +354,10 @@ mod tests {
     impl TestTranscript {
         /// Strobe init; meta-AD(label)
         pub fn new(label: &[u8]) -> TestTranscript {
-            use crate::constants::MERLIN_PROTOCOL_LABEL;
+            use crate::constants::MERLIN_BUMP_PROTOCOL_LABEL;
 
             let mut tt = TestTranscript {
-                state: Strobe::new(MERLIN_PROTOCOL_LABEL, SecParam::B128),
+                state: Strobe::new(MERLIN_BUMP_PROTOCOL_LABEL, SecParam::B128),
             };
             tt.append_message(b"dom-sep", label);
 
