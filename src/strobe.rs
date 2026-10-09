@@ -1,7 +1,6 @@
 //! Minimal implementation of (parts of) Strobe.
 
-use std::convert::TryInto;
-use core::ops::{Deref, DerefMut};
+use core::{convert::TryInto, ops::{Deref, DerefMut}};
 
 use keccak::Keccak;
 use zeroize::Zeroize;
