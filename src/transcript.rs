@@ -197,6 +197,17 @@ impl Transcript {
     pub fn as_bytes(&self) -> [u8; STROBE_LENGTH]{
         self.strobe.as_bytes()
     }
+
+    /// Convert bytes into a [`Transcript`]
+    /// 
+    /// **Warning**: Only call this method if the source of the bytes can be trusted
+    /// 
+    /// Otherwise, prefer recreating the Transcript with [`Transcript::new()`]
+    pub fn from_bytes(bytes: [u8; STROBE_LENGTH]) -> Transcript{
+        let strobe = Strobe128::from_bytes(bytes);
+
+        Transcript { strobe }
+    }
 }
 
 /// Constructs a [`TranscriptRng`] by rekeying the [`Transcript`] with

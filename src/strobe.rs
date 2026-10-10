@@ -32,7 +32,7 @@ fn transmute_state(st: &mut AlignedKeccakState) -> &mut [u64; 25] {
 /// This is a wrapper around 200-byte buffer that's always 8-byte aligned
 /// to make pointers to it safely convertible to pointers to [u64; 25]
 /// (since u64 words must be 8-byte aligned)
-#[derive(Clone, Zeroize)]
+#[derive(Clone, PartialEq, Zeroize)]
 #[zeroize(drop)]
 #[repr(align(8))]
 struct AlignedKeccakState([u8; 200]);
@@ -40,7 +40,7 @@ struct AlignedKeccakState([u8; 200]);
 /// A Strobe context for the 128-bit security level.
 ///
 /// Only `meta-AD`, `AD`, `KEY`, and `PRF` operations are supported.
-#[derive(Clone, Zeroize)]
+#[derive(Clone, PartialEq, Zeroize)]
 pub struct Strobe128 {
     state: AlignedKeccakState,
     pos: u8,
@@ -112,6 +112,27 @@ impl Strobe128 {
         bytes[202..203].copy_from_slice(&self.cur_flags.to_le_bytes());
 
         return bytes
+    }
+
+    /// Convert bytes into a Strobe context, [`Strobe128`]
+    /// 
+    /// **Warning**: Only call this method if the source of the bytes can be trusted
+    /// 
+    /// Otherwise, prefer recreating the Strobe with [`Strobe128::new()`]
+    pub fn from_bytes(bytes: [u8; STROBE_LENGTH]) -> Strobe128{
+        let mut state = [0u8; 200];
+        state.copy_from_slice(&bytes[0..200]);
+
+        let pos = bytes[200];
+        let pos_begin = bytes[201];
+        let cur_flags = bytes[202];
+
+        Strobe128 {
+            state: AlignedKeccakState(state), 
+            pos, 
+            pos_begin, 
+            cur_flags 
+        }
     }
 }
 
@@ -285,5 +306,22 @@ mod tests {
 
         // This will fail with a TargetAlignmentGreaterAndInputNotAligned error
         assert_eq!(align_error.unwrap_err(), PodCastError::TargetAlignmentGreaterAndInputNotAligned);
+    }
+
+    #[test]
+    fn test_strobe_bytes(){
+        let strobe = Strobe128::new(b"Strobe Bytes Test");
+
+        // Rebuild the strobe from the raw bytes
+        let valid_bytes = strobe.as_bytes();
+        let reconstructed_strobe = Strobe128::from_bytes(valid_bytes);
+
+        assert_eq!(strobe, reconstructed_strobe);
+
+        // Create an invalid strobe
+        let invalid_bytes = [0u8; 203];
+        let invalid_strobe = Strobe128::from_bytes(invalid_bytes);
+
+        assert_ne!(strobe, invalid_strobe);
     }
 }
