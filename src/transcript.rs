@@ -3,7 +3,7 @@ use core::convert::Infallible;
 use rand_core;
 use zeroize::Zeroize;
 
-use crate::strobe::Strobe128;
+use crate::strobe::{STROBE_LENGTH, Strobe128};
 
 fn encode_u64(x: u64) -> [u8; 8] {
     use byteorder::{ByteOrder, LittleEndian};
@@ -189,6 +189,13 @@ impl Transcript {
         TranscriptRngBuilder {
             strobe: self.strobe.clone(),
         }
+    }
+
+    /// Convert the transcript into a byte array
+    /// 
+    /// **Warning**: Do not use this for logging, it reveals the strobe state
+    pub fn as_bytes(&self) -> [u8; STROBE_LENGTH]{
+        self.strobe.as_bytes()
     }
 }
 
@@ -507,4 +514,35 @@ mod tests {
         // above aren't because the RNG is accidentally different.
         assert_eq!(s3, s4);
     } 
+        
+    #[test]
+    fn test_transcript_size(){
+        use crate::transcript::Transcript;
+
+        let protocol_label = b"test Transcript size";
+        let short_message = b"a";
+        let long_message = b"Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+        Sed viverra odio gravida massa porta, eu sodales magna congue. 
+        Ut posuere elit elit, at laoreet lacus consectetur et. 
+        Phasellus et tincidunt magna. Nam volutpat vulputate leo, id blandit magna feugiat eget. 
+        Donec consequat lacinia mi, eget fringilla lacus vulputate eget. Etiam ultrices eros id consequat iaculis. 
+        Aliquam erat volutpat. Quisque venenatis odio at erat porttitor dignissim. 
+        Fusce facilisis risus neque. Donec ac faucibus velit, in efficitur enim. 
+        Quisque bibendum nulla sed cursus congue. Duis dictum tempor leo, id mattis lorem lobortis id. 
+        Sed in neque congue, blandit neque vel, pretium purus. Morbi augue purus, sollicitudin eu purus vel, faucibus feugiat nisi. 
+        Nullam ut mattis lectus. Sed tempus nisi quis nulla ultrices, id blandit sapien convallis.";
+
+        // Initialise transcripts
+        let mut transcript_with_short = Transcript::new(protocol_label);
+        transcript_with_short.append_message(b"commitment", short_message);
+
+        let mut transcript_with_long = Transcript::new(protocol_label);
+        transcript_with_long.append_message(b"commitment", long_message);
+
+        let bytes_from_short = transcript_with_short.as_bytes();
+        let bytes_from_long = transcript_with_long.as_bytes();
+        
+        assert_eq!(bytes_from_short.len(), STROBE_LENGTH);
+        assert_eq!(bytes_from_short.len(), bytes_from_long.len());
+    }
 }

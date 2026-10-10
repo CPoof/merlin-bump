@@ -8,6 +8,9 @@ use zeroize::Zeroize;
 /// Strobe R value; security level 128 is hardcoded
 const STROBE_R: u8 = 166;
 
+/// Length of the strobe context in bytes
+pub const STROBE_LENGTH: usize = 203;
+
 const FLAG_I: u8 = 1;
 const FLAG_A: u8 = 1 << 1;
 const FLAG_C: u8 = 1 << 2;
@@ -95,6 +98,20 @@ impl Strobe128 {
     pub fn key(&mut self, data: &[u8], more: bool) {
         self.begin_op(FLAG_A | FLAG_C, more);
         self.overwrite(data);
+    }
+
+    /// Convert the strobe context into a byte array
+    /// 
+    /// **Warning**: Do not use this for logging, it reveals the strobe state
+    pub fn as_bytes(&self) -> [u8; STROBE_LENGTH]{
+        let mut bytes = [0u8; STROBE_LENGTH];
+        
+        bytes[0..200].copy_from_slice(&*self.state);
+        bytes[200..201].copy_from_slice(&self.pos.to_le_bytes());
+        bytes[201..202].copy_from_slice(&self.pos_begin.to_le_bytes());
+        bytes[202..203].copy_from_slice(&self.cur_flags.to_le_bytes());
+
+        return bytes
     }
 }
 
