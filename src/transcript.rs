@@ -437,7 +437,6 @@ mod tests {
         }
     }
 
-    /*
     #[test]
     fn transcript_rng_is_bound_to_transcript_and_witnesses() {
         use curve25519_dalek::scalar::Scalar;
@@ -507,5 +506,5 @@ mod tests {
         // presence of a bad RNG checks that the different challenges
         // above aren't because the RNG is accidentally different.
         assert_eq!(s3, s4);
-    } */
+    } 
 }
