@@ -32,7 +32,9 @@ fn transmute_state(st: &mut AlignedKeccakState) -> &mut [u64; 25] {
 /// This is a wrapper around 200-byte buffer that's always 8-byte aligned
 /// to make pointers to it safely convertible to pointers to [u64; 25]
 /// (since u64 words must be 8-byte aligned)
-#[derive(Clone, PartialEq, Zeroize)]
+#[cfg_attr(test, derive(PartialEq))]
+
+#[derive(Clone, Zeroize)]
 #[zeroize(drop)]
 #[repr(align(8))]
 struct AlignedKeccakState([u8; 200]);
@@ -40,7 +42,9 @@ struct AlignedKeccakState([u8; 200]);
 /// A Strobe context for the 128-bit security level.
 ///
 /// Only `meta-AD`, `AD`, `KEY`, and `PRF` operations are supported.
-#[derive(Clone, PartialEq, Zeroize)]
+#[cfg_attr(test, derive(PartialEq))]
+
+#[derive(Clone, Zeroize)]
 pub struct Strobe128 {
     state: AlignedKeccakState,
     pos: u8,
