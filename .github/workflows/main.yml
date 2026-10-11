@@ -54,18 +54,13 @@ jobs:
           toolchain: nightly
           targets: ${{ matrix.rust_target }}
 
-      # Installs the host development multi-arch standard linkers to prevent 32-bit PowerPC toolchain crashes
-      - name: Install Multi-arch Linker Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-multilib g++-multilib gcc-powerpc-linux-gnu
-
       - name: Run Cross-Compilation Build
         uses: zijiren233/cargo-cross@v1
         with:
           command: build
           targets: ${{ matrix.rust_target }}
           toolchain: nightly
+          use-default-linker: false
 
       - name: Run Cross-Compilation Tests
         uses: zijiren233/cargo-cross@v1
@@ -73,5 +68,5 @@ jobs:
           command: test
           targets: ${{ matrix.rust_target }}
           toolchain: nightly
-          # FIXED: Swapped deprecated 'args' input with 'cargo-args'
+          use-default-linker: false
           cargo-args: -- --test-threads=1
