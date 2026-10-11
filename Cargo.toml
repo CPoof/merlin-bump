@@ -24,7 +24,7 @@ rand_core = { version = "0.10.1", default-features = false }
 hex = {version = "0.4", default-features = false, optional = true}
 
 [dev-dependencies]
-strobe-rs = "0.7"
+strobe-rs = "0.13"
 curve25519-dalek = {version = "5", features = ["rand_core"]}
 rand_chacha = "0.10.0"
 rand = "0.10.3"
