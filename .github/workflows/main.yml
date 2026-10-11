@@ -62,7 +62,7 @@ jobs:
 
       - name: Cache Cross Binary Tool
         id: cache-cross
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/cross
           key: ${{ runner.os }}-cross-crates-io-v1
