@@ -6,7 +6,6 @@ edition = "2018"
 readme = "README.md"
 license = "MIT"
 repository = "https://github.com/CPoof/merlin-bump"
-homepage = "https://docs.rs/merlin"
 documentation = "https://docs.rs/merlin"
 categories = ["cryptography"]
 keywords = ["cryptography", "zero-knowledge", "fiat-shamir", "transcript"]
