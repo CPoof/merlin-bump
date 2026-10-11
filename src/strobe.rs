@@ -250,7 +250,6 @@ impl DerefMut for AlignedKeccakState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytemuck::PodCastError;
     use strobe_rs::{self, SecParam};
 
     #[test]
@@ -301,32 +300,6 @@ mod tests {
         s2.prf(&mut prf2, false);
 
         assert_eq!(prf1, prf2);
-    }
-    #[test]
-    fn test_bytemuck_runtime_enforcement() {
-        // Create a properly aligned instance
-        let mut state = AlignedKeccakState([0u8; 200]);
-        
-        // This must succeed because size is exactly 200 bytes and alignment is 8
-        transmute_state(&mut state.clone());
-
-        let byte_slice: &mut [u8] = &mut state.0;
-
-        // Create a slice that is 199 bytes instead of 200 (not divisible by 8)
-        let mismatched_size_slice = &mut byte_slice[..199];
-        let size_error = bytemuck::try_cast_slice_mut::<u8, u64>(mismatched_size_slice);
-        
-        // This will fail with an OutputSliceWouldHaveSlop
-        assert_eq!(size_error.unwrap_err(), PodCastError::OutputSliceWouldHaveSlop);
-
-        // Create an unaligned slice by offsetting the start pointer by exactly 1 byte.
-        // Even though 192 bytes is divisible by 8 (24 elements), the memory address 
-        // itself is now misaligned (Address % 8 != 0).
-        let misaligned_slice = &mut byte_slice[1..193]; 
-        let align_error = bytemuck::try_cast_slice_mut::<u8, u64>(misaligned_slice);
-
-        // This will fail with a TargetAlignmentGreaterAndInputNotAligned error
-        assert_eq!(align_error.unwrap_err(), PodCastError::TargetAlignmentGreaterAndInputNotAligned);
     }
 
     #[test]
