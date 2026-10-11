@@ -16,12 +16,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Rust ${{ matrix.rust_toolchain }}
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust_toolchain }}
+
+      - name: Cache Cargo Dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Build
         run: cargo build
@@ -40,7 +43,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Rust nightly
         uses: dtolnay/rust-toolchain@master
@@ -48,10 +51,25 @@ jobs:
           toolchain: nightly
           targets: ${{ matrix.rust_target }}
 
+      - name: Cache Cross Binary Tool
+        id: cache-cross
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cross
+          # The key ensures the cache is rebuilt if the cross repository changes its default branch version
+          key: ${{ runner.os }}-cross-rs-binary-v1
+
       - name: Install Cross tool
+        if: steps.cache-cross-outputs.cache-hit != 'true'
         run: |
-          # Use binstall for an instant binary download instead of compiling cross from source
-          cargo binstall --strategy quick-install cross -y
+          # Only executes and compiles from source if a cached cross binary is missing
+          cargo install cross --git https://github.com
+
+      - name: Cache Cargo Dependencies & Targets
+        uses: Swatinem/rust-cache@v2
+        with:
+          # Separates cache keys by architecture target to avoid compilation conflicts
+          key: ${{ matrix.rust_target }}
 
       - name: Build
         run: cross build --target ${{ matrix.rust_target }}
