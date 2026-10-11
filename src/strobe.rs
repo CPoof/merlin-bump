@@ -18,15 +18,34 @@ const FLAG_T: u8 = 1 << 3;
 const FLAG_M: u8 = 1 << 4;
 const FLAG_K: u8 = 1 << 5;
 
-fn transmute_state(st: &mut AlignedKeccakState) -> &mut [u64; 25] {
-    let byte_slice: &mut [u8] = &mut st.0; 
-    
-    // Cast the byte slice to a slice of u64s
-    // Verifies length and alignment at runtime.
-    let u64_slice: &mut [u64] = bytemuck::cast_slice_mut(byte_slice);
-        
-    // Turn the slice back into a fixed array reference
-    u64_slice.try_into().unwrap()
+/// Apply Keccak f1600 
+/// 
+/// Internally handles Endianness
+fn apply_f1600(st: &mut AlignedKeccakState) {
+    // Convert the state into 25 u64 Little Endian integers
+    let mut lanes = transmute_state(st);
+
+    Keccak::new().with_f1600(|f1600| {
+        f1600(&mut lanes);
+    });
+
+    // Write the results back out to the state buffer
+    for (i, lane) in lanes.iter().enumerate() {
+        let bytes = lane.to_le_bytes();
+        st.0[i * 8..(i + 1) * 8].copy_from_slice(&bytes);
+    }
+}
+
+/// Convert a [`AlignedKeccakState`] into a `[u64;25]`
+/// 
+/// Prefer [`apply_f1600`] unless you need to check the transmuted state
+fn transmute_state(st: &mut AlignedKeccakState) -> [u64;25]{
+    let mut lanes = [0u64; 25];
+    for (i, chunk) in st.0.chunks_exact(8).enumerate() {
+        let byte_array: [u8; 8] = chunk.try_into().unwrap();
+        lanes[i] = u64::from_le_bytes(byte_array);
+    }
+    lanes
 }
 
 /// This is a wrapper around 200-byte buffer that's always 8-byte aligned
@@ -65,10 +84,8 @@ impl Strobe128 {
             let mut st = AlignedKeccakState([0u8; 200]);
             st[0..6].copy_from_slice(&[1, STROBE_R + 2, 1, 0, 1, 96]);
             st[6..18].copy_from_slice(b"STROBEv1.0.2");
-            Keccak::new().with_f1600(|f1600| {
-                f1600(transmute_state(&mut st))
-            });
 
+            apply_f1600(&mut st);
             st
         };
 
@@ -145,9 +162,9 @@ impl Strobe128 {
         self.state[self.pos as usize] ^= self.pos_begin;
         self.state[(self.pos + 1) as usize] ^= 0x04;
         self.state[(STROBE_R + 1) as usize] ^= 0x80;
-        Keccak::new().with_f1600(|f1600| {
-            f1600(transmute_state(&mut self.state))
-        });
+
+        apply_f1600(&mut self.state);
+
         self.pos = 0;
         self.pos_begin = 0;
     }
