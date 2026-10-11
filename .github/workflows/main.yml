@@ -62,7 +62,7 @@ jobs:
         # FIXED: Corrected the steps context notation to reference .outputs correctly
         if: steps.cache-cross.outputs.cache-hit != 'true'
         run: |
-          cargo install cross --git https://github.com
+          cargo install cargo-cross --git https://github.com/zijiren233/cargo-cross
 
       - name: Cache Cargo Dependencies & Targets
         uses: Swatinem/rust-cache@v2
