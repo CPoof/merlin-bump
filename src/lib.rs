@@ -6,6 +6,8 @@
 //! Note that docs will only build on nightly Rust until
 //! [RFC 1990 stabilizes](https://github.com/rust-lang/rust/issues/44732).
 
+/// Temporarily test what happens on big endian
+/* 
 #[cfg(target_endian = "big")]
 compile_error!(
     r#"
@@ -14,6 +16,7 @@ have one to test correctness on.  If you're seeing this message,
 please file an issue!
 "#
 );
+*/
 
 mod constants;
 mod strobe;
