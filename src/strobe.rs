@@ -18,15 +18,34 @@ const FLAG_T: u8 = 1 << 3;
 const FLAG_M: u8 = 1 << 4;
 const FLAG_K: u8 = 1 << 5;
 
-fn transmute_state(st: &mut AlignedKeccakState) -> &mut [u64; 25] {
-    let byte_slice: &mut [u8] = &mut st.0; 
-    
-    // Cast the byte slice to a slice of u64s
-    // Verifies length and alignment at runtime.
-    let u64_slice: &mut [u64] = bytemuck::cast_slice_mut(byte_slice);
-        
-    // Turn the slice back into a fixed array reference
-    u64_slice.try_into().unwrap()
+/// Apply Keccak f1600 
+/// 
+/// Internally handles Endianness
+fn apply_f1600(st: &mut AlignedKeccakState) {
+    // Convert the state into 25 u64 Little Endian integers
+    let mut lanes = transmute_state(st);
+
+    Keccak::new().with_f1600(|f1600| {
+        f1600(&mut lanes);
+    });
+
+    // Write the results back out to the state buffer
+    for (i, lane) in lanes.iter().enumerate() {
+        let bytes = lane.to_le_bytes();
+        st.0[i * 8..(i + 1) * 8].copy_from_slice(&bytes);
+    }
+}
+
+/// Convert a [`AlignedKeccakState`] into a `[u64;25]`
+/// 
+/// Prefer [`apply_f1600`] unless you need to check the transmuted state
+fn transmute_state(st: &mut AlignedKeccakState) -> [u64;25]{
+    let mut lanes = [0u64; 25];
+    for (i, chunk) in st.0.chunks_exact(8).enumerate() {
+        let byte_array: [u8; 8] = chunk.try_into().unwrap();
+        lanes[i] = u64::from_le_bytes(byte_array);
+    }
+    lanes
 }
 
 /// This is a wrapper around 200-byte buffer that's always 8-byte aligned
@@ -65,10 +84,8 @@ impl Strobe128 {
             let mut st = AlignedKeccakState([0u8; 200]);
             st[0..6].copy_from_slice(&[1, STROBE_R + 2, 1, 0, 1, 96]);
             st[6..18].copy_from_slice(b"STROBEv1.0.2");
-            Keccak::new().with_f1600(|f1600| {
-                f1600(transmute_state(&mut st))
-            });
 
+            apply_f1600(&mut st);
             st
         };
 
@@ -145,9 +162,9 @@ impl Strobe128 {
         self.state[self.pos as usize] ^= self.pos_begin;
         self.state[(self.pos + 1) as usize] ^= 0x04;
         self.state[(STROBE_R + 1) as usize] ^= 0x80;
-        Keccak::new().with_f1600(|f1600| {
-            f1600(transmute_state(&mut self.state))
-        });
+
+        apply_f1600(&mut self.state);
+
         self.pos = 0;
         self.pos_begin = 0;
     }
@@ -233,7 +250,6 @@ impl DerefMut for AlignedKeccakState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytemuck::PodCastError;
     use strobe_rs::{self, SecParam};
 
     #[test]
@@ -284,32 +300,6 @@ mod tests {
         s2.prf(&mut prf2, false);
 
         assert_eq!(prf1, prf2);
-    }
-    #[test]
-    fn test_bytemuck_runtime_enforcement() {
-        // Create a properly aligned instance
-        let mut state = AlignedKeccakState([0u8; 200]);
-        
-        // This must succeed because size is exactly 200 bytes and alignment is 8
-        transmute_state(&mut state.clone());
-
-        let byte_slice: &mut [u8] = &mut state.0;
-
-        // Create a slice that is 199 bytes instead of 200 (not divisible by 8)
-        let mismatched_size_slice = &mut byte_slice[..199];
-        let size_error = bytemuck::try_cast_slice_mut::<u8, u64>(mismatched_size_slice);
-        
-        // This will fail with an OutputSliceWouldHaveSlop
-        assert_eq!(size_error.unwrap_err(), PodCastError::OutputSliceWouldHaveSlop);
-
-        // Create an unaligned slice by offsetting the start pointer by exactly 1 byte.
-        // Even though 192 bytes is divisible by 8 (24 elements), the memory address 
-        // itself is now misaligned (Address % 8 != 0).
-        let misaligned_slice = &mut byte_slice[1..193]; 
-        let align_error = bytemuck::try_cast_slice_mut::<u8, u64>(misaligned_slice);
-
-        // This will fail with a TargetAlignmentGreaterAndInputNotAligned error
-        assert_eq!(align_error.unwrap_err(), PodCastError::TargetAlignmentGreaterAndInputNotAligned);
     }
 
     #[test]
