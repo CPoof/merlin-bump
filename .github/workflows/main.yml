@@ -3,7 +3,7 @@ name: Test merlin
 on:
   push:
   pull_request:
-    types: [opened, repoened, synchronize]
+    types: [opened, reopened, synchronize]
 
 jobs:
   native-test:
@@ -15,21 +15,25 @@ jobs:
         os: [ubuntu-latest]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Install Rust ${{ matrix.rust_toolchain }}
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: ${{ matrix.rust_toolchain }}
-            profile: minimal
-            default: true
+        uses: dtolnay/rust-toolchain@stable
+        if: matrix.rust_toolchain == 'stable'
+
+      - name: Install Rust ${{ matrix.rust_toolchain }}
+        uses: dtolnay/rust-toolchain@nightly
+        if: matrix.rust_toolchain == 'nightly'
+
+      - name: Cache Cargo Dependencies
+        uses: Swatinem/rust-cache@v2
+
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
+        run: cargo build
+
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
 
   cross-linux-test:
     runs-on: ubuntu-latest
@@ -41,24 +45,33 @@ jobs:
           - powerpc64-unknown-linux-gnu
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
-      - name: Install Rust nightly
-        uses: actions-rs/toolchain@v1
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Rust nightly with targets
+        uses: dtolnay/rust-toolchain@master
         with:
-            toolchain: nightly
-            profile: minimal
-            target: ${{ matrix.rust_target }}
-            default: true
+          toolchain: nightly
+          targets: ${{ matrix.rust_target }}
+
+      - name: Cache Cross Binary Tool
+        id: cache-cross
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cross
+          key: ${{ runner.os }}-cross-crates-io-v1
+
+      - name: Install Cross tool
+        if: steps.cache-cross.outputs.cache-hit != 'true'
+        run: cargo install cross
+
+      - name: Cache Cargo Dependencies & Targets
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.rust_target }}
+
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          # see https://github.com/rust-embedded/cross
-          use-cross: true
-          command: build
-          args: --target ${{ matrix.rust_target }}
+        run: cross build --target ${{ matrix.rust_target }}
+
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: test
-          args: --target ${{ matrix.rust_target }} -- --test-threads=1
+        run: cross test --target ${{ matrix.rust_target }} -- --test-threads=1
