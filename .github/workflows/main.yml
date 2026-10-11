@@ -58,13 +58,13 @@ jobs:
         id: cache-cross
         uses: actions/cache@v4
         with:
-          path: ~/.cargo/bin/cross
-          key: ${{ runner.os }}-cross-rs-binary-v1
+          path: ~/.cargo/bin/cargo-cross
+          key: ${{ runner.os }}-cargo-cross-binary-v1
 
       - name: Install Cross tool
         if: steps.cache-cross.outputs.cache-hit != 'true'
         run: |
-          cargo install cargo-cross --git https://github.com/zijiren233/cargo-cross
+          cargo install cargo-cross --git https://github.com
 
       - name: Cache Cargo Dependencies & Targets
         uses: Swatinem/rust-cache@v2
@@ -72,7 +72,7 @@ jobs:
           key: ${{ matrix.rust_target }}
 
       - name: Build
-        run: cross build --target ${{ matrix.rust_target }}
+        run: cargo cross build --target ${{ matrix.rust_target }}
 
       - name: Test
-        run: cross test --target ${{ matrix.rust_target }} -- --test-threads=1
+        run: cargo cross test --target ${{ matrix.rust_target }} -- --test-threads=1
