@@ -54,20 +54,26 @@ jobs:
           toolchain: nightly
           targets: ${{ matrix.rust_target }}
 
-      - name: Run Cross-Compilation Build
-        uses: zijiren233/cargo-cross@v1
+      - name: Cache Cross Binary Tool
+        id: cache-cross
+        uses: actions/cache@v4
         with:
-          command: build
-          targets: ${{ matrix.rust_target }}
-          toolchain: nightly
+          path: ~/.cargo/bin/cross
+          key: ${{ runner.os }}-cross-rs-binary-v2
 
-      - name: Run Cross-Compilation Tests
-        uses: zijiren233/cargo-cross@v1
-        env:
-          CARGO_TARGET_POWERPC_UNKNOWN_LINUX_GNU_LINKER: powerpc64-linux-gnu-gcc
-          CARGO_TARGET_POWERPC_UNKNOWN_LINUX_GNU_RUSTFLAGS: "-C link-arg=-m32"
+      - name: Install Cross tool
+        if: steps.cache-cross.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cargo/bin
+          curl -LSfs https://github.com | tar -xz -C ~/.cargo/bin
+
+      - name: Cache Cargo Dependencies & Targets
+        uses: Swatinem/rust-cache@v2
         with:
-          command: test
-          targets: ${{ matrix.rust_target }}
-          toolchain: nightly
-          cargo-args: -- --test-threads=1
+          key: ${{ matrix.rust_target }}
+
+      - name: Build
+        run: cross build --target ${{ matrix.rust_target }}
+
+      - name: Test
+        run: cross test --target ${{ matrix.rust_target }} -- --test-threads=1
