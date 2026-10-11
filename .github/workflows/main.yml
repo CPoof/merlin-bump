@@ -2,8 +2,14 @@ name: Test merlin
 
 on:
   push:
+    branches:
+      - main
+      - develop
   pull_request:
     types: [opened, reopened, synchronize]
+    branches:
+      - main
+      - develop
 
 jobs:
   native-test:
