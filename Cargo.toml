@@ -29,6 +29,7 @@ bytemuck = {version = "1.25.2", features = ["align_offset", "derive"]}
 strobe-rs = "0.7"
 curve25519-dalek = {version = "5", features = ["rand_core"]}
 rand_chacha = "0.10.0"
+rand = "0.10.3"
 
 [features]
 default = ["std"]
