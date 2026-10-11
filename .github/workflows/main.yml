@@ -54,25 +54,17 @@ jobs:
           toolchain: nightly
           targets: ${{ matrix.rust_target }}
 
-      - name: Cache Cross Binary Tool
-        id: cache-cross
-        uses: actions/cache@v4
+      - name: Run Cross-Compilation Build
+        uses: zijiren233/cargo-cross@v1
         with:
-          path: ~/.cargo/bin/cargo-cross
-          key: ${{ runner.os }}-cargo-cross-binary-v1
+          command: build
+          targets: ${{ matrix.rust_target }}
+          toolchain: nightly
 
-      - name: Install Cross tool
-        if: steps.cache-cross.outputs.cache-hit != 'true'
-        run: |
-          cargo install cargo-cross --git https://github.com/zijiren233/cargo-cross
-
-      - name: Cache Cargo Dependencies & Targets
-        uses: Swatinem/rust-cache@v2
+      - name: Run Cross-Compilation Tests
+        uses: zijiren233/cargo-cross@v1
         with:
-          key: ${{ matrix.rust_target }}
-
-      - name: Build
-        run: cargo cross build --target ${{ matrix.rust_target }}
-
-      - name: Test
-        run: cargo cross test --target ${{ matrix.rust_target }} -- --test-threads=1
+          command: test
+          targets: ${{ matrix.rust_target }}
+          toolchain: nightly
+          args: -- --test-threads=1
