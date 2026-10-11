@@ -60,7 +60,6 @@ jobs:
           command: build
           targets: ${{ matrix.rust_target }}
           toolchain: nightly
-          use-default-linker: false
 
       - name: Run Cross-Compilation Tests
         uses: zijiren233/cargo-cross@v1
@@ -68,5 +67,4 @@ jobs:
           command: test
           targets: ${{ matrix.rust_target }}
           toolchain: nightly
-          use-default-linker: false
           cargo-args: -- --test-threads=1
