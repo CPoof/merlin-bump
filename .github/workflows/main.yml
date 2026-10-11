@@ -56,19 +56,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/cross
-          # The key ensures the cache is rebuilt if the cross repository changes its default branch version
           key: ${{ runner.os }}-cross-rs-binary-v1
 
       - name: Install Cross tool
-        if: steps.cache-cross-outputs.cache-hit != 'true'
+        # FIXED: Corrected the steps context notation to reference .outputs correctly
+        if: steps.cache-cross.outputs.cache-hit != 'true'
         run: |
-          # Only executes and compiles from source if a cached cross binary is missing
           cargo install cross --git https://github.com
 
       - name: Cache Cargo Dependencies & Targets
         uses: Swatinem/rust-cache@v2
         with:
-          # Separates cache keys by architecture target to avoid compilation conflicts
           key: ${{ matrix.rust_target }}
 
       - name: Build
