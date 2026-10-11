@@ -63,6 +63,9 @@ jobs:
 
       - name: Run Cross-Compilation Tests
         uses: zijiren233/cargo-cross@v1
+        env:
+          CARGO_TARGET_POWERPC_UNKNOWN_LINUX_GNU_LINKER: powerpc64-linux-gnu-gcc
+          RUSTFLAGS: "-C linker=powerpc64-linux-gnu-gcc -C link-arg=-m32"
         with:
           command: test
           targets: ${{ matrix.rust_target }}
